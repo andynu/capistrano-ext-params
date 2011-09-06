@@ -14,6 +14,8 @@ Hoe.spec 'capistrano-ext-params' do
   developer('Andrew Nutter-Upham', 'andynu@.com')
 
   # self.rubyforge_name = 'capistrano-ext-paramsx' # if different than 'capistrano-ext-params'
+  extra_deps << ['capistrano','>= 0']
+  extra_deps << ['capistrano-ext-set-helpers',' >= 0']
 end
 
 # vim: syntax=ruby

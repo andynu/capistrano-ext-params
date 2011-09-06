@@ -1,6 +1,0 @@
-.autotest
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-lib/capistrano/ext/params.rb
