@@ -12,14 +12,6 @@ end
 
 $capistrano_ext_params = {}
 
-CapistranoExtParams.with_configuration do
-  namespace :params do
-    desc "List all known parameters and their options"
-    task :list do
-      puts $capistrano_ext_params.to_yaml
-    end
-  end
-end
 
 module Capistrano
     class Configuration
@@ -42,6 +34,9 @@ module Capistrano
             brief << " " * (max_length-brief.length) if max_length > brief.length
             brief << "requires " + @options[:required].join(",")
         end
+        unless @options.nil? || @options[:optional].nil? || @options[:optional].empty?
+            brief << " optional " + @options[:optional].join(",")
+        end
         brief
     end
   end
@@ -52,7 +47,13 @@ module Capistrano
   class Configuration
     module Execution
 
-      def ensure_params(params=[])
+      def optional_params(params=[])
+        params.each do |param|
+          env_set_optional(param)
+        end
+      end
+
+      def required_params(params=[])
         params = [ params ].flatten
 
         # Query user for any undefined variables
@@ -68,7 +69,8 @@ module Capistrano
 
       alias_method :original_execute_task, :execute_task
       def execute_task(task)
-        ensure_params(task.options[:required]) if task.options[:required]
+        optional_params(task.options[:optional]) if task.options[:optional]
+        required_params(task.options[:required]) if task.options[:required]
         original_execute_task(task)
       end
 
@@ -147,4 +149,32 @@ module Capistrano
 
   end
 
+end
+
+CapistranoExtParams.with_configuration do
+  desc_param :task_name, "A fully qualified capistrano task name"
+
+  namespace :params do
+    desc "List all known parameters and their options"
+    task :list,
+         :optional => [:task_name] do
+      param_defs = $capistrano_ext_params
+      if exists?(:task_name)
+        all_params = []
+        param_defs_task = {}
+        target_task = top.find_task(task_name)
+        if target_task
+          optional = target_task.options[:optional]
+          required = target_task.options[:required]
+          all_params = [optional,required].flatten.compact
+          all_params.each do |param|
+            param_defs_task[param] = nil
+          end
+        end
+        param_defs = param_defs_task.merge(param_defs.select{|k,v| all_params.include? k})
+      end
+
+      puts param_defs.to_yaml
+    end
+  end
 end
