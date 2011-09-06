@@ -1,0 +1,13 @@
+
+require File.expand_path('../../lib/capistrano/ext/params',__FILE__)
+
+desc_param :stage, "Which class of servers to deploy to",
+           :values => [:dev, :test, :prod]
+
+desc "test required params"
+task :params_test, 
+     :required => [:stage] do
+  puts $capistrano_ext_params.to_yaml
+end
+
+# vim: ft=ruby

@@ -1,6 +1,36 @@
+require 'yaml'
 require 'capistrano'
+require 'capistrano/ext/set/helpers'
+
 class CapistranoExtParams
-  VERSION = '0.1.0'
+  VERSION = '0.1.1'
+
+  def self.with_configuration(&block)
+    Capistrano::Configuration.instance(:must_exist).load(&block)
+  end
+end
+
+$capistrano_ext_params = {}
+
+CapistranoExtParams.with_configuration do
+  namespace :params do
+    desc "List all known parameters and their options"
+    task :list do
+      puts $capistrano_ext_params.to_yaml
+    end
+  end
+end
+
+module Capistrano
+    class Configuration
+        module Namespaces
+          def desc_param(var,description,opts={})
+            $capistrano_ext_params[var] = {
+              :description => description
+            }.merge(opts)
+          end
+        end
+    end
 end
 
 module Capistrano
@@ -8,9 +38,9 @@ module Capistrano
     alias_method :original_brief_description, :brief_description
     def brief_description(max_length=nil)
         brief = original_brief_description(max_length)
-        unless @options.nil? || @options[:required_params].nil? || @options[:required_params].empty?
+        unless @options.nil? || @options[:required].nil? || @options[:required].empty?
             brief << " " * (max_length-brief.length) if max_length > brief.length
-            brief << "requires " + @options[:required_params].join(",")
+            brief << "requires " + @options[:required].join(",")
         end
         brief
     end
@@ -27,7 +57,7 @@ module Capistrano
 
         # Query user for any undefined variables
         params.each do |param|
-          param_desc = $parameter_descriptions[param] || "value for #{param}"
+          param_desc = $capistrano_ext_params[param][:description] || "value for #{param}"
           unless exists?(param)
             set_ask( param, "#{param} - #{param_desc}: " )
           end
@@ -38,8 +68,7 @@ module Capistrano
 
       alias_method :original_execute_task, :execute_task
       def execute_task(task)
-        puts "     options #{task.options}"
-        ensure_params(task.options[:required_params]) if task.options[:required_params]
+        ensure_params(task.options[:required]) if task.options[:required]
         original_execute_task(task)
       end
 
@@ -51,7 +80,7 @@ end
 module Capistrano
   class CLI
     module Help
-      #alias_method :original_explain_task, :explain_task
+      alias_method :original_explain_task, :explain_task
 
       def explain_task(config,name)
 
@@ -61,26 +90,26 @@ module Capistrano
             $recipe,
             task.fully_qualified_name,
             [
-              [task.options[:required_params]].flatten.compact.map {|param| " %s=ARG" % [param] },
-              [task.options[:optional_params]].flatten.compact.map {|param| " [%s=ARG]" % [param] }
+              [task.options[:required]].flatten.compact.map {|param| " %s=ARG" % [param] },
+              [task.options[:optional]].flatten.compact.map {|param| " [%s=ARG]" % [param] }
             ].flatten.join()
           ]
           puts "-"*HEADER_LEN
           puts format_text(task.description)
           puts "-"*HEADER_LEN
-          if task.options[:required_params]
+          if task.options[:required]
             puts "Required Parameters"
-            task.options[:required_params].each do |param|
-              param_desc = $parameter_descriptions[param] || param
+            task.options[:required].each do |param|
+              param_desc = $capistrano_ext_params[param][:description] || param
               puts "\t#{param} - #{param_desc}"
             end
           end
-          if task.options[:optional_params]
+          if task.options[:optional]
             puts "Optional Parameters"
-            task.options[:optional_params].each do |param|
-              param_details = $optional_parameter_descriptions[param]
+            task.options[:optional].each do |param|
+              param_details = $capistrano_ext_params[param]
               if param_details
-                param_desc = "#{param_details[:desc]} (default=#{param_details[:default]})"
+                param_desc = "#{param_details[:description]} (default=#{param_details[:default]})"
               else
                 param_desc = param
               end
