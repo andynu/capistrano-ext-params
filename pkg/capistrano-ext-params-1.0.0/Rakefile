@@ -8,6 +8,7 @@ require 'hoe'
 # Hoe.plugin :inline
 # Hoe.plugin :racc
 # Hoe.plugin :rubyforge
+Hoe.plugin :gemcutter
 
 Hoe.spec 'capistrano-ext-params' do
   developer('Andrew Nutter-Upham', 'andynu@.com')

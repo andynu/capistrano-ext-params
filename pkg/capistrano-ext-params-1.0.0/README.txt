@@ -1,5 +1,7 @@
 = capistrano-ext-params
 
+http://github.com/andynu/capistrano-ext-params
+
 == DESCRIPTION:
 
 This package adds optional and required params to capistrano.
@@ -8,9 +10,12 @@ All required parameters are ensured to have a non-null value before the task exe
 
 == FEATURES/PROBLEMS:
 
-* PROBLEM: does not build
+* PROBLEM: not released
 
 == SYNOPSIS:
+
+# please wait until 1.0
+# this is the goal, not the current state of things.
 
 task :name, :roles => :server,
      :required => {
