@@ -3,7 +3,7 @@ require 'capistrano'
 require 'capistrano/ext/set/helpers'
 
 class CapistranoExtParams
-  VERSION = '0.1.1'
+  VERSION = '0.1.2'
 
   def self.with_configuration(&block)
     Capistrano::Configuration.instance(:must_exist).load(&block)
